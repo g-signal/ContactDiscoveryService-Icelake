@@ -1,5 +1,3 @@
-
-
 account-table: # AccountTableConfiguration, aws DynamoDB
   accessKeyId:
   secretAccessKey:
