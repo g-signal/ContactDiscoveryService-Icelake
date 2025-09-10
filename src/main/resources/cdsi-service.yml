@@ -47,16 +47,17 @@ authentication: #AuthenticationConfiguration
 
 
 enclave: #EnclaveConfiguration
-  enclave-id: #string, NotBlank
-  available-epc-memory: #long, Positive
-  load-factor: #double, [1.0, 3.0]
-  shards: #int, Positive
-  token-secret: #string,NotBlank @ByteSize(max = 64)
-  max-outstanding-requests: #int,Positive
-  omit-permits-used: false #boolean default false
-  simulated: #boolean
+  enclave-id: "my-enclave-001" #string, NotBlank
+  available-epc-memory: 2048  # 以 MB 为单位 #long, Positive
+  load-factor: 1.5 #double, [1.0, 3.0]
+  shards: 3 #int, Positive
+  token-secret: "my-secret-token-1234567890123456"  # 确保不超过 64 字节 #string,NotBlank @ByteSize(max = 64)
+  max-outstanding-requests: 100  #int,Positive
+  omit-permits-used: false  #boolean default false
+  simulated: true #boolean
   attestation-refresh-interval: 10m # Scheduled
   attestation-initial-delay: 0s # Scheduled
+
 
 # env = "dev"
 random-account-populator: #RandomAccountPopulator
