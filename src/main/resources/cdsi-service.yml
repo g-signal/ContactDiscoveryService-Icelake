@@ -5,7 +5,7 @@ account-table: # AccountTableConfiguration, aws DynamoDB
   region:
   table-name:
   stream-name:
-  table-read-segments: 16 # default 16,Positive
+  table-read-segments: 16 #int, default 16,Positive
 
 
 cosmos: # CosmosClientConfiguration
