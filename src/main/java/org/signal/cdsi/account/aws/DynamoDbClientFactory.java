@@ -8,6 +8,9 @@ package org.signal.cdsi.account.aws;
 import com.google.common.annotations.VisibleForTesting;
 import io.micronaut.context.annotation.Factory;
 import jakarta.inject.Singleton;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.retry.RetryMode;
 import software.amazon.awssdk.core.retry.RetryPolicy;
@@ -27,11 +30,14 @@ class DynamoDbClientFactory {
 
   @Singleton
   DynamoDbAsyncClient dynamoDbAsyncClient() {
+    AwsCredentialsProvider awsCredentialsProvider = StaticCredentialsProvider.create(
+        AwsBasicCredentials.create(accountTableConfiguration.getAccessKeyId(), accountTableConfiguration.getSecretAccessKey()));
     return DynamoDbAsyncClient.builder()
         .region(Region.of(accountTableConfiguration.getRegion()))
         .overrideConfiguration(ClientOverrideConfiguration.builder()
             .retryPolicy(getRetryPolicy())
             .build())
+        .credentialsProvider(awsCredentialsProvider)
         .build();
   }
 
