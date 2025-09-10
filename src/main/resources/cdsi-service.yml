@@ -1,5 +1,6 @@
 
 # ！！！需要配置隐式的aws credentials，使用环境变量配置path
+
 account-table: # AccountTableConfiguration, aws DynamoDB
   region:
   table-name:
@@ -16,6 +17,12 @@ cosmos: # CosmosClientConfiguration
 redis-leaky-bucket: # LeakyBucketRedisClientFactory
   host: #String
   password: #String
+  circuit-breaker:
+    reset: 5s
+    delay: 500ms
+    attempts: 3
+
+
 
 leaky-bucket-limit: # EachProperty，LeakyBucketRateLimitConfiguration
   bucket1:
@@ -49,8 +56,12 @@ enclave: #EnclaveConfiguration
   max-outstanding-requests: #int,Positive
   omit-permits-used: false #boolean default false
   simulated: #boolean
-
+  attestationRefreshInterval: 10m # Scheduled
+  attestationInitialDelay: 0s # Scheduled
 
 # env = "dev"
 random-account-populator: #RandomAccountPopulator
   accounts: 0 # int, default 0
+
+
+
