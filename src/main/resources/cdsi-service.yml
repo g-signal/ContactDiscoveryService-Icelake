@@ -8,7 +8,7 @@ account-table: # AccountTableConfiguration, aws DynamoDB
   table-read-segments: 16 #int, default 16,Positive
 
 
-cosmos: # CosmosClientConfiguration
+cosmos: #azure， CosmosClientConfiguration
   database: #String,NotBlank
   container: #String,NotBlank
   endpoint: #String,NotBlank
