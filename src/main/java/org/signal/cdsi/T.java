@@ -1,0 +1,8 @@
+package org.signal.cdsi;
+
+import io.micronaut.context.annotation.Configuration;
+import io.micronaut.context.annotation.ConfigurationProperties;
+import io.micronaut.context.annotation.Requires;
+import io.micronaut.context.annotation.Value;
+import io.micronaut.context.annotation.EachProperty;
+

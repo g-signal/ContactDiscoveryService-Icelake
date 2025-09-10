@@ -1,0 +1,56 @@
+
+# ！！！需要配置隐式的aws credentials，使用环境变量配置path
+account-table: # AccountTableConfiguration, aws DynamoDB
+  region:
+  table-name:
+  stream-name:
+  table-read-segments: 16 # default 16,Positive
+
+
+cosmos: # CosmosClientConfiguration
+  database: #String,NotBlank
+  container: #String,NotBlank
+  endpoint: #String,NotBlank
+  key: #String,NotBlank
+
+redis-leaky-bucket: # LeakyBucketRedisClientFactory
+  host: #String
+  password: #String
+
+leaky-bucket-limit: # EachProperty，LeakyBucketRateLimitConfiguration
+  bucket1:
+    name:
+    bucket-size: #int,PositiveOrZero
+    leak-rate-scalar: #int,PositiveOrZero
+    leak-rate-duration: #Duration
+  bucket2:
+    name:
+    bucket-size: #PositiveOrZero
+    leak-rate-scalar: #PositiveOrZero
+    leak-rate-duration:
+
+token-rate-limit: #TokenRateLimitConfiguration
+  bucket-size: #PositiveOrZero
+  leak-rate-scalar: #PositiveOrZero
+  leak-rate-duration:
+
+
+authentication: #AuthenticationConfiguration
+  sharedSecret: #byte[] min = 32, max = 32
+  tokenExpiration: P1D #Duration, default 1day
+
+
+enclave: #EnclaveConfiguration
+  enclave-id: #string, NotBlank
+  available-epc-memory: #long, Positive
+  load-factor: #double, [1.0, 3.0]
+  shards: #int, Positive
+  token-secret: #string,NotBlank @ByteSize(max = 64)
+  max-outstanding-requests: #int,Positive
+  omit-permits-used: false #boolean default false
+  simulated: #boolean
+
+
+# env = "dev"
+random-account-populator: #RandomAccountPopulator
+  accounts: 0 # int, default 0
