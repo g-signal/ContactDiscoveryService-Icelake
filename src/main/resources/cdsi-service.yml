@@ -1,5 +1,5 @@
 
-# ！！！需要配置隐式的aws credentials，使用环境变量配置path
+# ！！！需要配置隐式的aws credentials，使用环境变量配置path：aws.webIdentityTokenFile
 
 account-table: # AccountTableConfiguration, aws DynamoDB
   region:
