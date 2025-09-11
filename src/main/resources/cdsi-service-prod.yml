@@ -1,3 +1,26 @@
+micronaut:
+  environment: prod
+  application:
+    name: cdsi
+    version: 1.23.0
+    default-charset: utf-8
+  executors:
+    enclave-jni:
+      type: fixed
+      # Note: this must never exceed `NumTCS` in `cds.conf`
+      number-of-threads: 100
+  metrics:
+    enabled: true
+    export:
+      statsd:
+        enabled: false
+  server:
+    port: 8021
+    netty:
+      # don't compress
+      compression-threshold: 1073741824  # 1G
+      compression-level: 0
+
 account-table: # AccountTableConfiguration, aws DynamoDB, prod must
   access-key-id:
   secret-access-key:
@@ -16,31 +39,26 @@ cosmos: #azure， CosmosClientConfiguration, for CosmosTokenRateLimiter, prod mu
 redis-leaky-bucket: # LeakyBucketRedisClientFactory, for  RedisLeakyBucketRateLimiter, prod must
   host: #String
   password: #String
-  circuit-breaker:
+  circuit-breaker: #RedisLeakyBucketRateLimiter.executeScript
     reset: 5s
     delay: 500ms
     attempts: 3
 
 
-
 leaky-bucket-limit: # EachProperty，LeakyBucketRateLimitConfiguration extends RateLimitConfiguration, for LeakyBucketRateLimiter, prod must
-  bucket1:
-    bucket-size: #int,PositiveOrZero
-    leak-rate-scalar: #int,PositiveOrZero
-    leak-rate-duration: #Duration
-  bucket2:
-    bucket-size: #PositiveOrZero
-    leak-rate-scalar: #PositiveOrZero
-    leak-rate-duration:
+  connections:
+    bucket-size: 10 #int,PositiveOrZero
+    leak-rate-scalar: 10 #int,PositiveOrZero
+    leak-rate-duration: PT1M #Duration
 
 token-rate-limit: # TokenRateLimitConfiguration  extends RateLimitConfiguration, for TokenRateLimiter, prod must
-  bucket-size: #PositiveOrZero
-  leak-rate-scalar: #PositiveOrZero
-  leak-rate-duration:
+  bucket-size: 50000 #PositiveOrZero
+  leak-rate-scalar: 6 #PositiveOrZero
+  leak-rate-duration: PT1H
 
 
 authentication: #AuthenticationConfiguration, must
-  shared-secret: #byte[] min = 32, max = 32
+  shared-secret: Dx9/dxgdVWPazjTqCD6nMdAwS7pnnA5GsiM+aN4pQok= #byte[] min = 32, max = 32
   token-expiration: P1D #Duration, default 1day
 
 
@@ -55,11 +73,3 @@ enclave: #EnclaveConfiguration, must
   simulated: true #boolean
   attestation-refresh-interval: 10m # Scheduled
   attestation-initial-delay: 0s # Scheduled
-
-
-# env = "dev"
-random-account-populator: #RandomAccountPopulator
-  accounts: 0 # int, default 0
-
-
-

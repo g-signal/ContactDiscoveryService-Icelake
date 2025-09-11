@@ -1,4 +1,5 @@
 micronaut:
+  environment: dev
   executors:
     enclave-jni:
       number-of-threads: 1
