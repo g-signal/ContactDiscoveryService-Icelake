@@ -40,7 +40,14 @@ if [ -z "$DOCKER_REPO" ]; then
     exit 1
 fi
 
-# Step 1: 清理和准备
+# Step 1: 初始化Git Submodules
+echo "🔧 Initializing git submodules..."
+git submodule init
+git submodule update --recursive --init || true
+git submodule update --recursive || true
+echo "✅ Git submodules initialized"
+
+# Step 2: 清理和准备
 echo "🧹 Cleaning previous builds..."
 mvn clean
 echo "✅ Clean completed"
@@ -48,18 +55,18 @@ echo "✅ Clean completed"
 # 可选: 清理Docker缓存
 # docker system prune -f --filter "until=24h"
 
-# Step 2: 构建SGX Enclave
+# Step 3: 构建SGX Enclave
 echo "🔐 Building SGX Enclave..."
 if [ "$BUILD_OPTIMIZATION" = "native" ]; then
     echo "Building production enclave..."
-    mvn compile exec:exec@build-enclave
+    mvn compile exec:exec@enclave-release
 else
     echo "Building development enclave..."
     mvn compile exec:exec@build-dev-enclave
 fi
 echo "✅ SGX Enclave build completed"
 
-# Step 3: 构建Java应用
+# Step 4: 构建Java应用
 echo "☕ Building Java application..."
 mvn package -DskipTests
 echo "✅ Java application build completed"
@@ -74,13 +81,21 @@ echo "📦 Application Version: $APP_VERSION"
 echo "🏷️  Build Tag: $BUILD_TAG"
 echo "🔗 Git Commit: $GIT_COMMIT"
 
-# Step 4: 构建Docker镜像
+# Step 5: 构建Docker镜像
 echo "🐳 Building Docker images..."
+
+# 检查Docker buildx支持
+if docker buildx version >/dev/null 2>&1; then
+    DOCKER_BUILD_CMD="docker buildx build --platform linux/amd64"
+    echo "✅ Using Docker buildx with platform support"
+else
+    DOCKER_BUILD_CMD="docker build"
+    echo "⚠️  Docker buildx not available, using standard docker build"
+fi
 
 # 构建主镜像
 echo "Building main image: ${DOCKER_REPO}/cdsi:${BUILD_TAG}"
-docker build \
-    --platform linux/amd64 \
+$DOCKER_BUILD_CMD \
     --build-arg APP_VERSION="$APP_VERSION" \
     --build-arg BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     --build-arg GIT_COMMIT="$GIT_COMMIT" \
@@ -98,7 +113,7 @@ if [ "$LATEST_TAG" = "true" ]; then
 fi
 
 
-# Step 5: 镜像上传
+# Step 6: 镜像上传
 if [ "$BUILD_PUSH" = "true" ]; then
     echo "📤 Pushing Docker images..."
 
@@ -126,11 +141,11 @@ else
     echo "⏭️  Skipping push (build.push=false in config)"
 fi
 
-# Step 6: 显示镜像信息
+# Step 7: 显示镜像信息
 echo "📊 Built images:"
 docker images "${DOCKER_REPO}/cdsi" --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" | head -10
 
-# Step 7: 可选清理
+# Step 8: 可选清理
 echo ""
 read -p "🧹 Clean up intermediate Docker layers? (y/N): " -n 1 -r
 echo
