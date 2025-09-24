@@ -93,6 +93,8 @@ else
     echo "⚠️  Docker buildx not available, using standard docker build"
 fi
 
+DOCKER_BUILD_CMD="docker build"
+
 # 构建主镜像
 echo "Building main image: ${DOCKER_REPO}/cdsi:${BUILD_TAG}"
 $DOCKER_BUILD_CMD \
