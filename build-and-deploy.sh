@@ -4,6 +4,13 @@ set -e
 # CDSI Docker Build and Deploy Script
 # Based on config/build.properties configuration
 
+# 清理函数
+cleanup() {
+    echo "🧹 Cleaning up on error..."
+    docker system prune -f --filter "until=1h" >/dev/null 2>&1 || true
+}
+trap cleanup ERR
+
 # 脚本配置
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/config/build.properties"
@@ -55,21 +62,41 @@ echo "✅ Clean completed"
 # 可选: 清理Docker缓存
 # docker system prune -f --filter "until=24h"
 
-# Step 3: 构建SGX Enclave
-echo "🔐 Building SGX Enclave..."
-if [ "$BUILD_OPTIMIZATION" = "native" ]; then
-    echo "Building production enclave..."
-    mvn compile exec:exec@enclave-release
-else
-    echo "Building development enclave..."
-    mvn compile exec:exec@build-dev-enclave
+# Step 3: 检查SGX构建环境
+echo "🔍 Checking SGX build environment..."
+if ! docker images | grep -q "cdsi-enclave-build"; then
+    echo "⚠️  SGX build environment not found, will be created during build..."
 fi
-echo "✅ SGX Enclave build completed"
 
-# Step 4: 构建Java应用
-echo "☕ Building Java application..."
-mvn package -DskipTests
-echo "✅ Java application build completed"
+# Step 4: 构建SGX Enclave和Java应用 (单命令优化)
+echo "🔐 Building SGX Enclave and Java application..."
+if [ "$BUILD_OPTIMIZATION" = "native" ]; then
+    echo "Building production enclave and application..."
+    # 单命令: 先执行enclave-release，再package (转义感叹号)
+    mvn exec:exec@enclave-release package -DskipTests -P\!build-dev-enclave
+else
+    echo "Building development enclave and application..."
+    # 开发模式: 使用默认profile，自动构建dev enclave
+    mvn package -DskipTests
+fi
+
+# 验证enclave构建产物
+echo "🔍 Verifying enclave artifacts..."
+ENCLAVE_DIR="src/main/resources/org/signal/cdsi/enclave"
+if [ ! -f "$ENCLAVE_DIR/enclave-debug.signed" ]; then
+    echo "❌ Enclave build failed - missing debug enclave"
+    exit 1
+fi
+if [ "$BUILD_OPTIMIZATION" = "native" ] && [ ! -f "$ENCLAVE_DIR"/enclave-Standard_DC*s_v3-*.signed ]; then
+    echo "❌ Enclave build failed - missing production enclaves"
+    exit 1
+fi
+
+# 记录当前Docker镜像状态
+echo "📊 Current Docker images:"
+docker images cdsi-enclave-build --format "{{.Repository}}:{{.Tag}} {{.CreatedAt}}" | head -1
+
+echo "✅ SGX Enclave and Java application build completed"
 
 # 获取版本信息
 APP_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout 2>/dev/null || echo "unknown")
@@ -93,18 +120,18 @@ else
     echo "⚠️  Docker buildx not available, using standard docker build"
 fi
 
-DOCKER_BUILD_CMD="docker build"
-
 # 构建主镜像
 echo "Building main image: ${DOCKER_REPO}/cdsi:${BUILD_TAG}"
-$DOCKER_BUILD_CMD \
+if ! $DOCKER_BUILD_CMD \
     --build-arg APP_VERSION="$APP_VERSION" \
     --build-arg BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     --build-arg GIT_COMMIT="$GIT_COMMIT" \
     -t "${DOCKER_REPO}/cdsi:${BUILD_TAG}" \
     -t "${DOCKER_REPO}/cdsi:${APP_VERSION}" \
-    .
-
+    .; then
+    echo "❌ Docker image build failed"
+    exit 1
+fi
 
 echo "✅ Docker image built successfully"
 
@@ -178,5 +205,8 @@ if [ "$BUILD_PUSH" = "true" ]; then
     echo "🔍 To check health:"
     echo "   curl http://localhost:8080/health"
 fi
+
+# 取消错误清理trap，正常结束
+trap - ERR
 
 echo "✨ Done!"
