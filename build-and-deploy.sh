@@ -87,9 +87,12 @@ if [ ! -f "$ENCLAVE_DIR/enclave-debug.signed" ]; then
     echo "❌ Enclave build failed - missing debug enclave"
     exit 1
 fi
-if [ "$BUILD_OPTIMIZATION" = "native" ] && [ ! -f "$ENCLAVE_DIR"/enclave-Standard_DC*s_v3-*.signed ]; then
-    echo "❌ Enclave build failed - missing production enclaves"
-    exit 1
+if [ "$BUILD_OPTIMIZATION" = "native" ]; then
+    # Check if any production enclave files exist
+    if ! ls "$ENCLAVE_DIR"/enclave-Standard_DC*s_v3-*.signed 1> /dev/null 2>&1; then
+        echo "❌ Enclave build failed - missing production enclaves"
+        exit 1
+    fi
 fi
 
 # 记录当前Docker镜像状态
