@@ -105,6 +105,7 @@ $DOCKER_BUILD_CMD \
     -t "${DOCKER_REPO}/cdsi:${APP_VERSION}" \
     .
 
+
 echo "✅ Docker image built successfully"
 
 # Latest标签
