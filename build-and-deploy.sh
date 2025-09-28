@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+rm -rf target
+
 # CDSI Docker Build and Deploy Script
 # Based on config/build.properties configuration
 
