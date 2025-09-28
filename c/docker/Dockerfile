@@ -30,7 +30,7 @@ RUN mkdir /src && \
 RUN wget -O jdk-21.deb https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb && \
     dpkg -i jdk-21.deb && \
     rm jdk-21.deb && \
-    echo "JAVA_HOME=$(find /usr/lib/jvm -name 'jdk-21*oracle*' -type d | head -1)" >> /etc/environment
+    echo "JAVA_HOME=$(find /usr/lib/jvm -name 'jdk-21*oracle*' -type d | head -1)"
 
 
 
@@ -62,7 +62,7 @@ RUN cd /tmp && \
     rm -fv clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10.tar.xz
 
 
-RUN JAVA_HOME_DIR=$(find /usr/lib/jvm -name 'jdk-21*oracle*' -type d | head -1) && \
+RUN JAVA_HOME_DIR=$(find /usr/lib/jvm -name 'jdk-21*oracle*' -type d | head -1)
 
 ENV JAVA_HOME=${JAVA_HOME_DIR}
 
