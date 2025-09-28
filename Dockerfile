@@ -72,11 +72,12 @@ RUN apt-get update && apt-get install -y \
 
 
 # 动态设置 JAVA_HOME 和 PATH
-RUN JAVA_HOME_DIR=$(find /usr/lib/jvm -name 'jdk-21*oracle*' -type d | head -1)
+RUN JAVA_HOME_DIR=$(find /usr/lib/jvm -name 'jdk-21*oracle*' -type d | head -1) && \
+    ln -sf $JAVA_HOME_DIR /usr/lib/jvm/java-21
 
-ENV JAVA_HOME=${JAVA_HOME_DIR}
+ENV JAVA_HOME="/usr/lib/jvm/java-21"
 ENV PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/openenclave/share/pkgconfig"
-ENV PATH="${JAVA_HOME_DIR}/bin:/opt/openenclave/bin:/opt/clang/bin:${PATH}"
+ENV PATH="/usr/lib/jvm/java-21/bin:/opt/openenclave/bin:/opt/clang/bin:${PATH}"
 
 
 

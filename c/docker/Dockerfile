@@ -62,9 +62,10 @@ RUN cd /tmp && \
     rm -fv clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10.tar.xz
 
 
-RUN JAVA_HOME_DIR=$(find /usr/lib/jvm -name 'jdk-21*oracle*' -type d | head -1)
+RUN JAVA_HOME_DIR=$(find /usr/lib/jvm -name 'jdk-21*oracle*' -type d | head -1) && \
+    ln -sf $JAVA_HOME_DIR /usr/lib/jvm/java-21
 
-ENV JAVA_HOME=${JAVA_HOME_DIR}
+ENV JAVA_HOME="/usr/lib/jvm/java-21"
 
 ENV PATH="/opt/openenclave/bin:/opt/clang/bin:${PATH}"
 ENV PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/openenclave/share/pkgconfig"
