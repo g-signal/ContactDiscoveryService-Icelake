@@ -16,7 +16,7 @@ RUN mkdir /src && \
     libssl-dev \
     gdb \
     libprotobuf32 \
-    openjdk-17-jdk-headless \
+    openjdk-21-jdk-headless \
     libtool \
     bison \
     automake \
@@ -66,9 +66,9 @@ RUN apt-get update && apt-get install -y \
     libcurl4 && apt-get clean
 
 
-ENV JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+ENV JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
 ENV PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/openenclave/share/pkgconfig"
-ENV PATH="/usr/lib/jvm/java-17-openjdk-amd64/bin:/opt/openenclave/bin:/opt/clang/bin:${PATH}"
+ENV PATH="/usr/lib/jvm/java-21-openjdk-amd64/bin:/opt/openenclave/bin:/opt/clang/bin:${PATH}"
 
 
 
