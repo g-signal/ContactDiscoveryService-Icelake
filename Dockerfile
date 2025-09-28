@@ -70,7 +70,7 @@ RUN apt-get update && apt-get install -y \
     libcurl4 && apt-get clean
 
 
-ENV JAVA_HOME="/usr/lib/jvm/jdk-21-oracle-x64"
+ENV JAVA_HOME="/usr/lib/jvm/jdk-21.0.8-oracle-x64"
 ENV PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/openenclave/share/pkgconfig"
 ENV PATH="/usr/lib/jvm/jdk-21-oracle-x64/bin:/opt/openenclave/bin:/opt/clang/bin:${PATH}"
 

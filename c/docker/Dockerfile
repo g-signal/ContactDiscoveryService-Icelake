@@ -60,7 +60,7 @@ RUN cd /tmp && \
     rm -fv clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10.tar.xz
 
 ENV PATH="/opt/openenclave/bin:/opt/clang/bin:${PATH}"
-ENV JAVA_HOME="/usr/lib/jvm/jdk-21-oracle-x64"
+ENV JAVA_HOME="/usr/lib/jvm/jdk-21.0.8-oracle-x64"
 ENV PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/openenclave/share/pkgconfig"
 
 WORKDIR /src
