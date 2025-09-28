@@ -26,10 +26,12 @@ RUN mkdir /src && \
     pkg-config \
     xz-utils
 
-# 安装 Java 21
+# 安装 Java 21 并自动设置路径
 RUN wget -O jdk-21.deb https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb && \
     dpkg -i jdk-21.deb && \
-    rm jdk-21.deb
+    rm jdk-21.deb && \
+    echo "JAVA_HOME=$(find /usr/lib/jvm -name 'jdk-21*oracle*' -type d | head -1)" >> /etc/environment
+
 
 
 RUN apt-get -y install pipx pip python3-venv
@@ -59,8 +61,12 @@ RUN cd /tmp && \
     ln -s /opt/clang/bin/clang-11 /opt/clang/bin/clang++-11 && \
     rm -fv clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10.tar.xz
 
+
+RUN JAVA_HOME_DIR=$(find /usr/lib/jvm -name 'jdk-21*oracle*' -type d | head -1) && \
+
+ENV JAVA_HOME=${JAVA_HOME_DIR}
+
 ENV PATH="/opt/openenclave/bin:/opt/clang/bin:${PATH}"
-ENV JAVA_HOME="/usr/lib/jvm/jdk-21.0.8-oracle-x64"
 ENV PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/openenclave/share/pkgconfig"
 
 WORKDIR /src

@@ -43,10 +43,11 @@ ADD --checksum=sha256:${OPENENCLAVE_HASH} \
     https://github.com/openenclave/openenclave/releases/download/v${OPENENCLAVE_VERSION}/Ubuntu_2204_open-enclave_${OPENENCLAVE_VERSION}_amd64.deb ./
 RUN dpkg -i Ubuntu_2204_open-enclave_${OPENENCLAVE_VERSION}_amd64.deb
 
-# 安装 Java 21
+# 安装 Java 21 并自动设置路径
 RUN wget -O jdk-21.deb https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb && \
     dpkg -i jdk-21.deb && \
-    rm jdk-21.deb
+    rm jdk-21.deb && \
+    echo "JAVA_HOME=$(find /usr/lib/jvm -name 'jdk-21*oracle*' -type d | head -1)" >> /etc/environment
 
 
 # Rather than ADD --checksum=xxx this file, we wget it within a RUN so the file itself,
@@ -70,9 +71,12 @@ RUN apt-get update && apt-get install -y \
     libcurl4 && apt-get clean
 
 
-ENV JAVA_HOME="/usr/lib/jvm/jdk-21.0.8-oracle-x64"
+# 动态设置 JAVA_HOME 和 PATH
+RUN JAVA_HOME_DIR=$(find /usr/lib/jvm -name 'jdk-21*oracle*' -type d | head -1) && \
+
+ENV JAVA_HOME=${JAVA_HOME_DIR}
 ENV PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/openenclave/share/pkgconfig"
-ENV PATH="/usr/lib/jvm/jdk-21-oracle-x64/bin:/opt/openenclave/bin:/opt/clang/bin:${PATH}"
+ENV PATH="${JAVA_HOME_DIR}/bin:/opt/openenclave/bin:/opt/clang/bin:${PATH}"
 
 
 
