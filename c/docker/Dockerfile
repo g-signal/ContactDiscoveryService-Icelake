@@ -15,7 +15,6 @@ RUN mkdir /src && \
     libssl-dev \
     gdb \
     libprotobuf32 \
-    openjdk-21-jdk-headless \
     libtool \
     bison \
     automake \
@@ -26,6 +25,12 @@ RUN mkdir /src && \
     valgrind \
     pkg-config \
     xz-utils
+
+# 安装 Java 21
+RUN wget -O jdk-21.deb https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb && \
+    dpkg -i jdk-21.deb && \
+    rm jdk-21.deb
+
 
 RUN apt-get -y install pipx pip python3-venv
 ENV PIPX_HOME=/opt/pipx
@@ -55,7 +60,7 @@ RUN cd /tmp && \
     rm -fv clang+llvm-11.1.0-x86_64-linux-gnu-ubuntu-20.10.tar.xz
 
 ENV PATH="/opt/openenclave/bin:/opt/clang/bin:${PATH}"
-ENV JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
+ENV JAVA_HOME="/usr/lib/jvm/jdk-21-oracle-x64"
 ENV PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/openenclave/share/pkgconfig"
 
 WORKDIR /src
