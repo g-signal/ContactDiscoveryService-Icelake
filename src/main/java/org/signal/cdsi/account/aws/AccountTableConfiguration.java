@@ -14,6 +14,12 @@ import jakarta.validation.constraints.Positive;
 class AccountTableConfiguration {
 
   @NotBlank
+  private String accessKeyId;
+  @NotBlank
+  private String secretAccessKey;
+
+
+  @NotBlank
   private String region;
 
   @NotBlank
@@ -24,6 +30,22 @@ class AccountTableConfiguration {
 
   @Positive
   private int tableReadSegments = 16;
+
+  public String getAccessKeyId() {
+    return accessKeyId;
+  }
+
+  public void setAccessKeyId(final String accessKeyId) {
+    this.accessKeyId = accessKeyId;
+  }
+
+  public String getSecretAccessKey() {
+    return secretAccessKey;
+  }
+
+  public void setSecretAccessKey(final String secretAccessKey) {
+    this.secretAccessKey = secretAccessKey;
+  }
 
   public String getRegion() {
     return region;
