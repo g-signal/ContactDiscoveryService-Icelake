@@ -63,8 +63,33 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Extract enclave MRENCLAVEs
+        id: extract_mrenclave
+        run: |
+          echo "Extracting MRENCLAVE values from built enclaves..."
+          cd c
+          if [ -f enclave.Standard_DC2s_v3 ]; then
+            MRENCLAVE_DC2s=$(${OE_DIR:-/opt/openenclave}/bin/oesign dump -e enclave.Standard_DC2s_v3 | grep -i mrenclave | cut -d '=' -f2)
+            echo "Standard_DC2s_v3 MRENCLAVE: $MRENCLAVE_DC2s"
+            echo "mrenclave_dc2s=$MRENCLAVE_DC2s" >> $GITHUB_OUTPUT
+          fi
+          if [ -f enclave.Standard_DC24s_v3 ]; then
+            MRENCLAVE_DC24s=$(${OE_DIR:-/opt/openenclave}/bin/oesign dump -e enclave.Standard_DC24s_v3 | grep -i mrenclave | cut -d '=' -f2)
+            echo "Standard_DC24s_v3 MRENCLAVE: $MRENCLAVE_DC24s"
+            echo "mrenclave_dc24s=$MRENCLAVE_DC24s" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build and push container image
         run: |
           ./mvnw -e -B deploy \
             -Dpackaging=docker \
             -Djib.to.image="${{ secrets.DOCKERHUB_USERNAME }}/cdsi:${{ steps.resolve_tag.outputs.tag }}"
+
+          echo "🎯 Docker image pushed: ${{ secrets.DOCKERHUB_USERNAME }}/cdsi:${{ steps.resolve_tag.outputs.tag }}"
+          echo "📋 Enclave IDs for this build:"
+          if [ -n "${{ steps.extract_mrenclave.outputs.mrenclave_dc2s }}" ]; then
+            echo "  - Standard_DC2s_v3-${{ steps.extract_mrenclave.outputs.mrenclave_dc2s }}"
+          fi
+          if [ -n "${{ steps.extract_mrenclave.outputs.mrenclave_dc24s }}" ]; then
+            echo "  - Standard_DC24s_v3-${{ steps.extract_mrenclave.outputs.mrenclave_dc24s }}"
+          fi
