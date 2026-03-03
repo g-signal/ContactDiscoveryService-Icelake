@@ -28,8 +28,8 @@ import io.micronaut.websocket.annotation.OnMessage;
 import io.micronaut.websocket.annotation.OnOpen;
 import io.micronaut.websocket.annotation.ServerWebSocket;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,7 +38,6 @@ import org.signal.cdsi.enclave.CdsiEnclaveException;
 import org.signal.cdsi.enclave.Enclave;
 import org.signal.cdsi.enclave.EnclaveClient;
 import org.signal.cdsi.enclave.EnclaveClient.State;
-import org.signal.cdsi.enclave.EnclaveException;
 import org.signal.cdsi.enclave.OpenEnclaveException;
 import org.signal.cdsi.limits.RateLimitExceededException;
 import org.signal.cdsi.limits.RetryAfterMessage;
@@ -91,57 +90,74 @@ public class WebSocketHandler {
     this.meterRegistry.gauge(OPEN_WEBSOCKET_GAUGE_NAME, OPEN_WEBSOCKET_COUNT);
   }
 
-  /** If the websocket has not already been closed, close it erroneously. */
+  /**
+   * Close a WebSocket session (if not already closed) with a specific cause.
+   *
+   * @param session the WebSocket session to close
+   * @param cause the reason for closing the socket
+   */
   private Void closeWithError(final WebSocketSession session, Throwable cause) {
-    if (closed || client == null) return null;
+    if (closed || client == null) {
+      return null;
+    }
+
     closed = true;
-    cause = CompletionExceptions.unwrap(cause);
 
-    if (cause instanceof RateLimitExceededException) {
-      logger.debug("Websocket for session {} closed due to rate limit exceeded", session.getId());
-    } else if (cause instanceof ClosedEarlyException) {
-      logger.debug("Websocket for session {} closed early", session.getId());
-    } else if (cause instanceof EnclaveException) {
-      logger.debug("Websocket for session {} closed due to enclave exception", session.getId(), cause);
-    } else {
-      logger.warn("Closing websocket session {} erroneously", session.getId(), cause);
-    }
+    final CloseReason closeReason = switch (CompletionExceptions.unwrap(cause)) {
+      case RateLimitExceededException rateLimitExceededException -> {
+        logger.debug("Websocket for session {} closed due to rate limit exceeded", session.getId());
 
-    final CloseReason closeReason;
+        final String retryAfterJson;
 
-    // See https://grpc.github.io/grpc/core/md_doc_statuscodes.html
-    if (cause instanceof RateLimitExceededException rle) {
-      closeReason = new CloseReason(4008, retryAfterCloseReason(rle.getRetryDuration()));
-    } else if (cause instanceof IOException) {
-      closeReason = new CloseReason(4014, cause.getMessage());
-    } else if (cause instanceof IllegalArgumentException) {
-      closeReason = new CloseReason(4003, cause.getMessage());
-    } else if (cause instanceof CdsiEnclaveException enclaveException) {
-      meterRegistry.counter(ENCLAVE_ERROR_CODES_COUNTER_NAME, List.of(
-          Tag.of(ENCLAVE_ERROR_CODES_TAG_CODE, "cdsi_" + enclaveException.getCode()), platformTag)).increment();
-      closeReason = new CloseReason(statusCodeFromCdsiEnclaveException(enclaveException), cause.getMessage());
-    } else if (cause instanceof OpenEnclaveException enclaveException) {
-      meterRegistry.counter(ENCLAVE_ERROR_CODES_COUNTER_NAME, List.of(
-          Tag.of(ENCLAVE_ERROR_CODES_TAG_CODE, "oe_" + enclaveException.getCode()), platformTag)).increment();
-      closeReason = new CloseReason(4013, cause.getMessage());
-    } else {
-      closeReason = new CloseReason(4013, cause.getMessage());
-    }
+        try {
+          retryAfterJson = OBJECT_MAPPER.writeValueAsString(new RetryAfterMessage(rateLimitExceededException.getRetryDuration().toSeconds()));
+        } catch (final JsonProcessingException e) {
+          // This should never happen when writing a well-known object to a string
+          throw new UncheckedIOException(e);
+        }
+
+        yield new CloseReason(4008, retryAfterJson);
+      }
+
+      case ClosedEarlyException _ -> {
+        logger.debug("Websocket for session {} closed early", session.getId());
+        yield new CloseReason(4013, cause.getMessage());
+      }
+
+      case CdsiEnclaveException cdsiEnclaveException -> {
+        logger.debug("Websocket for session {} closed due to enclave exception", session.getId(), cdsiEnclaveException);
+
+        meterRegistry.counter(ENCLAVE_ERROR_CODES_COUNTER_NAME, List.of(
+            Tag.of(ENCLAVE_ERROR_CODES_TAG_CODE, "cdsi_" + cdsiEnclaveException.getCode()), platformTag)).increment();
+
+        yield  new CloseReason(statusCodeFromCdsiEnclaveException(cdsiEnclaveException), cdsiEnclaveException.getMessage());
+      }
+
+      case OpenEnclaveException openEnclaveException -> {
+        logger.debug("Websocket for session {} closed due to enclave exception", session.getId(), openEnclaveException);
+
+        meterRegistry.counter(ENCLAVE_ERROR_CODES_COUNTER_NAME, List.of(
+            Tag.of(ENCLAVE_ERROR_CODES_TAG_CODE, "oe_" + openEnclaveException.getCode()), platformTag)).increment();
+
+        yield new CloseReason(4013, openEnclaveException.getMessage());
+      }
+
+      case IOException ioException -> new CloseReason(4014, ioException.getMessage());
+      case IllegalArgumentException illegalArgumentException -> new CloseReason(4003, illegalArgumentException.getMessage());
+
+      default -> {
+        logger.warn("Closing websocket session {} with error", session.getId(), cause);
+        yield new CloseReason(4013, cause.getMessage());
+      }
+    };
+
     this.close(session, closeReason);
     return null;
   }
 
-
-  private String retryAfterCloseReason(Duration retryAfter) {
-      try {
-        return OBJECT_MAPPER.writeValueAsString(new RetryAfterMessage(retryAfter.toSeconds()));
-      } catch (JsonProcessingException e) {
-        logger.error("Failed to serialize retry after", e);
-        return "";
-      }
-  }
-
   private static int statusCodeFromCdsiEnclaveException(CdsiEnclaveException e) {
+    // See https://grpc.github.io/grpc/core/md_doc_statuscodes.html
+    //
     // 4000 - 4099: maps to GRPC error codes
     // 4100 - 4199: CDSI-specific error codes
     return switch (e.getCode()) {
