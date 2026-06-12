@@ -9,11 +9,19 @@ apt-get install -y \
       software-properties-common \
       debian-archive-keyring \
 ## apt-get install
-echo "deb [arch=amd64] https://packages.microsoft.com/ubuntu/22.04/prod jammy main" | tee /etc/apt/sources.list.d/msprod.list
-echo "deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu jammy main" | tee /etc/apt/sources.list.d/sgx.list
 
-wget -qO - https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key | apt-key add -
-wget -qO - https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+# Download keys to proper keyring files (modern method)
+wget -qO - https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key | gpg --dearmor | tee /usr/share/keyrings/intel-sgx.gpg > /dev/null
+wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /usr/share/keyrings/microsoft-prod.gpg > /dev/null
+
+# Remove old source files if they exist to avoid conflicts
+rm -f /etc/apt/sources.list.d/msprod.list
+rm -f /etc/apt/sources.list.d/sgx.list
+
+# Add sources with signed-by option (modern method)
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/ubuntu/22.04/prod jammy main" | tee /etc/apt/sources.list.d/msprod.list
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-sgx.gpg] https://download.01.org/intel-sgx/sgx_repo/ubuntu jammy main" | tee /etc/apt/sources.list.d/sgx.list
+
 apt-get update
 apt-get -y install \
     libsgx-ae-epid=2.25.100.3-jammy1 \
